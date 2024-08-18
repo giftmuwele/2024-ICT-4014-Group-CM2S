@@ -58,7 +58,7 @@ async def upload_document(file: UploadFile = File(...)):
     finally:
         os.remove(file_location)
 
-    # Return the compliance report
+    # Return the report
     return {"compliance_report": report}
 
 def process_document(file_path):
