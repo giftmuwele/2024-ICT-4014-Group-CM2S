@@ -1,14 +1,9 @@
 # -*- coding: utf-8 -*-
-"""BACKEND.ipynb
-
-Original file is located at
-    https://colab.research.google.com/drive/16QfyMLGXOWsLF2rfh1MtUdwH3sOQhXzL
-"""
-
-!pip install deepdoctection
-
 import os
+from fastapi import FastAPI, File, UploadFile, HTTPException
 from deepdoctection import ModelZoo, DoctectionPipe, Page
+
+app = FastAPI()
 
 # Load the model
 model = ModelZoo.get("publaynet_fast")
@@ -45,11 +40,27 @@ def check_compliance(doc):
     else:
         issues.append("Abstract is missing.")
 
-    # Add more checks based on guidelines...
-
     return issues
 
-# Process a document
+# API endpoint to process document uploads
+@app.post("/upload")
+async def upload_document(file: UploadFile = File(...)):
+    # Save the uploaded file
+    file_location = f"temp_files/{file.filename}"
+    with open(file_location, "wb+") as file_object:
+        file_object.write(file.file.read())
+    
+    # Process the document
+    try:
+        report = process_document(file_location)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Document processing failed.")
+    finally:
+        os.remove(file_location)
+
+    # Return the compliance report
+    return {"compliance_report": report}
+
 def process_document(file_path):
     pages = pipe(file_path)
     doc = Page(pages)
@@ -59,9 +70,8 @@ def process_document(file_path):
 
     return compliance_report
 
-# Example usage
-file_path = "path/to/thesis.pdf"
-report = process_document(file_path)
+# Run the app
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
 
-for issue in report:
-    print(issue)
