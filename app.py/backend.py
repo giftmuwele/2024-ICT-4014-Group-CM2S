@@ -1,12 +1,13 @@
-# -*- coding: utf-8 -*-
+!pip install fastapi uvicorn deepdoctection[full]
+
 import os
 from fastapi import FastAPI, File, UploadFile, HTTPException
-from deepdoctection import ModelZoo, DoctectionPipe, Page
+from deepdoctection import ModelCatalog, DoctectionPipe, Page
 
 app = FastAPI()
 
-# Load the model
-model = ModelZoo.get("publaynet_fast")
+# Attempt to load the model using an alternative method
+model = ModelCatalog.get_model("publaynet_fast")  # Check if 'get_model' or similar exists
 
 # Initialize the pipeline
 pipe = DoctectionPipe(model=model)
@@ -49,7 +50,7 @@ async def upload_document(file: UploadFile = File(...)):
     file_location = f"temp_files/{file.filename}"
     with open(file_location, "wb+") as file_object:
         file_object.write(file.file.read())
-    
+
     # Process the document
     try:
         report = process_document(file_location)
@@ -58,7 +59,7 @@ async def upload_document(file: UploadFile = File(...)):
     finally:
         os.remove(file_location)
 
-    # Return the report
+    # Return the compliance report
     return {"compliance_report": report}
 
 def process_document(file_path):
