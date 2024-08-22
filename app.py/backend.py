@@ -1,13 +1,8 @@
-!pip install fastapi uvicorn deepdoctection[full]
-
 import os
-from fastapi import FastAPI, File, UploadFile, HTTPException
 from deepdoctection import ModelCatalog, DoctectionPipe, Page
 
-app = FastAPI()
-
-# Attempt to load the model using an alternative method
-model = ModelCatalog.get_model("publaynet_fast")  # Check if 'get_model' or similar exists
+# Load the model
+model = ModelCatalog.get("publaynet_fast")
 
 # Initialize the pipeline
 pipe = DoctectionPipe(model=model)
@@ -43,25 +38,7 @@ def check_compliance(doc):
 
     return issues
 
-# API endpoint to process document uploads
-@app.post("/upload")
-async def upload_document(file: UploadFile = File(...)):
-    # Save the uploaded file
-    file_location = f"temp_files/{file.filename}"
-    with open(file_location, "wb+") as file_object:
-        file_object.write(file.file.read())
-
-    # Process the document
-    try:
-        report = process_document(file_location)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Document processing failed.")
-    finally:
-        os.remove(file_location)
-
-    # Return the compliance report
-    return {"compliance_report": report}
-
+# Define the document processing function
 def process_document(file_path):
     pages = pipe(file_path)
     doc = Page(pages)
@@ -71,8 +48,13 @@ def process_document(file_path):
 
     return compliance_report
 
-# Run the app
+# Example usage
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    file_path = "path/to/your/document.pdf"
+    if os.path.exists(file_path):
+        report = process_document(file_path)
+        print("Compliance Report:", report)
+    else:
+        print("File not found!")
+
 
