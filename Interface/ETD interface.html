@@ -54,28 +54,56 @@
         </div>
     </div>
 <script>
-// JAVASCRIPT FOR FILE UPLOADING
-function uploadFile(event) {
-    const file = event.target.files[0]; // Get the first selected file
+<script>
+    // Function to upload file with progress tracking
+    function uploadFile(event) {
+        const file = event.target.files[0]; // Get the first selected file
 
-    if (file) {
-        const formData = new FormData();
-        formData.append('file', file); // Append the file to the FormData object
+        if (file) {
+            const formData = new FormData();
+            formData.append('file', file); // Append the file to the FormData object
 
-        fetch('http://localhost:3000/api/upload', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log(data.message); // Display backend response
-            document.getElementById('output').innerText = data.message;
-        })
-        .catch(error => console.error('Error:', error));
-    } else {
-        console.error('No file selected.');
+            const xhr = new XMLHttpRequest();
+            
+            // Monitor the progress of the file upload
+            xhr.upload.addEventListener('progress', function(e) {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    document.getElementById('progressBar').style.width = percentComplete + '%';
+                    document.getElementById('progressBar').innerText = Math.floor(percentComplete) + '%';
+                }
+            });
+
+            // Handle the response after the upload is complete
+            xhr.addEventListener('load', function() {
+                if (xhr.status === 200) {
+                    const response = JSON.parse(xhr.responseText);
+                    document.getElementById('output').innerText = response.message;
+                    
+                    // Save analysis results for future use
+                    localStorage.setItem('analysisResults', JSON.stringify(response.analysis_results));
+
+                    // Set progress bar to 100%
+                    document.getElementById('progressBar').style.width = '100%';
+                    document.getElementById('progressBar').innerText = '100%';
+                } else {
+                    console.error('Upload failed:', xhr.statusText);
+                }
+            });
+
+            // Handle errors
+            xhr.addEventListener('error', function() {
+                console.error('Upload error');
+            });
+
+            // Open the connection and send the form data
+            xhr.open('POST', 'http://localhost:3000/api/upload', true);
+            xhr.send(formData);
+        } else {
+            console.error('No file selected.');
+        }
     }
-}
+</script>
 
 
    //JavaScript to interact with Flask API 
