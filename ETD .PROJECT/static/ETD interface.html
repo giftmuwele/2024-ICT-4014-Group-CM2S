@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNZA Thesis and Dissertation Compliance Checker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="output"></div>
+
+    <header>
+        <img src="logo.png" alt="UNZA Logo" style="display: block; margin: 20px auto; width: 130px; height: auto;">
+    </header>
+    <nav>
+        <h2>The University of Zambia Thesis and Dissertation Compliance Checker</h2>
+        <ul>
+            <li><a href="ETD interface.html">Home</a></li>
+            <li><a href="ABOUT.html" class="active">About</a></li>
+            <li><a href="https://graduate.unza.zm/images/files/PG_Regulations_Guidelines_rev.pdf#">Guidelines</a></li>
+            <li><a href="mailto:drgs@unza.zm">Contact</a></li>
+        </ul>
+    </nav>
+    <div class="container">
+        <h1>Upload Your Manuscript</h1>
+        <div id="uploadSection">
+            <label id="uploadLabel" class="tooltip" for="fileInput">
+                Click to Upload or Drag and Drop
+                <span class="tooltiptext">Supported formats: .pdf, .docx</span>
+            </label>
+            <input type="file" id="fileInput" onchange="uploadFile(event);" />
+        </div>
+        <div id="progressBarContainer">
+            <div id="progressBar">0%</div>
+        </div>
+        <button onclick="sendData()">Check Format</button>
+        <button onclick="displayDocument()">Display Analysis Results</button>
+        <div class="report" id="report"></div>
+    </div>
+
+    <footer>
+        <p>&copy; 2024 University of Zambia. All rights reserved.</p>
+    </footer>
+
+    <script>
+        let uploadedFile = null;
+
+        // Store the selected file
+        function uploadFile(event) {
+            uploadedFile = event.target.files[0]; // Get the selected file
+
+            if (uploadedFile) {
+                document.getElementById('output').innerText = "File selected: " + uploadedFile.name;
+            } else {
+                console.error('No file selected.');
+            }
+        }
+
+        // Function to handle the "Check Format" button click
+        function sendData() {
+            if (!uploadedFile) {
+                document.getElementById('output').innerText = "Please upload a file first.";
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', uploadedFile);
+
+            const xhr = new XMLHttpRequest();
+
+            // Monitor the file upload progress
+            xhr.upload.addEventListener('progress', function(e) {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    document.getElementById('progressBar').style.width = percentComplete + '%';
+                    document.getElementById('progressBar').innerText = Math.floor(percentComplete) + '%';
+                }
+            });
+
+            // Handle the response
+            xhr.addEventListener('load', function() {
+                if (xhr.status === 200) {
+                    const response = JSON.parse(xhr.responseText);
+                    document.getElementById('output').innerText = response.message;
+
+                    // Save analysis results to localStorage
+                    localStorage.setItem('analysisResults', JSON.stringify(response.results));
+
+                    // Set progress bar to 100%
+                    document.getElementById('progressBar').style.width = '100%';
+                    document.getElementById('progressBar').innerText = '100%';
+                } else {
+                    console.error('Upload failed:', xhr.statusText);
+                    document.getElementById('output').innerText = 'Error occurred while analyzing the file.';
+                }
+            });
+
+            // Handle errors
+            xhr.addEventListener('error', function() {
+                console.error('Upload error');
+                document.getElementById('output').innerText = 'Error uploading the file.';
+            });
+
+            // Open the connection and send the form data
+            xhr.open('POST', 'http://localhost:5000/api/upload', true);
+            xhr.send(formData);
+        }
+
+        // Function to display the analysis report in a readable format
+        function displayDocument() {
+            const results = JSON.parse(localStorage.getItem('analysisResults'));
+            const reportDiv = document.getElementById('report');
+            reportDiv.innerHTML = ''; // Clear previous report
+
+            if (results) {
+                reportDiv.innerHTML = '<h3>Analysis Report:</h3>';
+                
+                // Display each result in a formatted manner
+                results.forEach((result, index) => {
+                    const resultItem = document.createElement('div');
+                    resultItem.classList.add('result-item'); // Add styling class if needed
+
+                    // Format each key and value in the result
+                    formatResult(result, resultItem);
+                    reportDiv.appendChild(resultItem);
+                });
+            } else {
+                reportDiv.innerText = 'No analysis available. Please upload and check a file first.';
+            }
+        }
+
+        // Recursively format and display results
+        function formatResult(result, parentElement) {
+            if (typeof result === 'object' && result !== null) {
+                Object.entries(result).forEach(([key, value]) => {
+                    if (typeof value === 'object') {
+                        const nestedDiv = document.createElement('div');
+                        nestedDiv.innerHTML = `<strong>${key}:</strong>`;
+                        parentElement.appendChild(nestedDiv);
+                        formatResult(value, nestedDiv); // Recursion for nested objects
+                    } else {
+                        const p = document.createElement('p');
+                        p.innerHTML = `<strong>${key}:</strong> ${value}`;
+                        parentElement.appendChild(p);
+                    }
+                });
+            } else {
+                const p = document.createElement('p');
+                p.innerHTML = `${result}`;
+                parentElement.appendChild(p);
+            }
+        }
+    </script>
+</body>
+</html>
+
