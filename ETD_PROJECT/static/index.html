@@ -44,30 +44,30 @@
 
     <script>
         let uploadedFile = null;
-
+    
         // Store the selected file
         function uploadFile(event) {
             uploadedFile = event.target.files[0]; // Get the selected file
-
+    
             if (uploadedFile) {
                 document.getElementById('output').innerText = "File selected: " + uploadedFile.name;
             } else {
                 console.error('No file selected.');
             }
         }
-
+    
         // Function to handle the "Check Format" button click
         function sendData() {
             if (!uploadedFile) {
                 document.getElementById('output').innerText = "Please upload a file first.";
                 return;
             }
-
+    
             const formData = new FormData();
             formData.append('file', uploadedFile);
-
+    
             const xhr = new XMLHttpRequest();
-
+    
             // Monitor the file upload progress
             xhr.upload.addEventListener('progress', function(e) {
                 if (e.lengthComputable) {
@@ -76,16 +76,16 @@
                     document.getElementById('progressBar').innerText = Math.floor(percentComplete) + '%';
                 }
             });
-
+    
             // Handle the response
             xhr.addEventListener('load', function() {
                 if (xhr.status === 200) {
                     const response = JSON.parse(xhr.responseText);
                     document.getElementById('output').innerText = response.message;
-
+    
                     // Save analysis results to localStorage
                     localStorage.setItem('analysisResults', JSON.stringify(response.results));
-
+    
                     // Set progress bar to 100%
                     document.getElementById('progressBar').style.width = '100%';
                     document.getElementById('progressBar').innerText = '100%';
@@ -94,24 +94,24 @@
                     document.getElementById('output').innerText = 'Error occurred while analyzing the file.';
                 }
             });
-
+    
             // Handle errors
             xhr.addEventListener('error', function() {
                 console.error('Upload error');
                 document.getElementById('output').innerText = 'Error uploading the file.';
             });
-
+    
             // Open the connection and send the form data
-            xhr.open('POST', 'http://localhost:5000/api/upload', true);
+            xhr.open('POST', 'https://two024-ict-4014-group-cm2s-11.onrender.com:5000/api/upload', true); //    server's IP/domain
             xhr.send(formData);
         }
-
+    
         // Function to display the analysis report in a readable format
         function displayDocument() {
             const results = JSON.parse(localStorage.getItem('analysisResults'));
             const reportDiv = document.getElementById('report');
             reportDiv.innerHTML = ''; // Clear previous report
-
+    
             if (results) {
                 reportDiv.innerHTML = '<h3>Analysis Report:</h3>';
                 
@@ -119,7 +119,7 @@
                 results.forEach((result, index) => {
                     const resultItem = document.createElement('div');
                     resultItem.classList.add('result-item'); // Add styling class if needed
-
+    
                     // Format each key and value in the result
                     formatResult(result, resultItem);
                     reportDiv.appendChild(resultItem);
@@ -128,7 +128,7 @@
                 reportDiv.innerText = 'No analysis available. Please upload and check a file first.';
             }
         }
-
+    
         // Recursively format and display results
         function formatResult(result, parentElement) {
             if (typeof result === 'object' && result !== null) {
@@ -151,6 +151,7 @@
             }
         }
     </script>
+    
 </body>
 </html>
 
